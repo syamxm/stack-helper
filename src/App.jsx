@@ -1,4 +1,7 @@
 import { useState } from "react";
+import AsciiLogo from "./AsciiLogo";
+
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
 const categories = [
   {
@@ -746,106 +749,170 @@ export default function App() {
       )
     : allItems.filter((item) => item.categoryId === activeCategory);
 
+  const activeCategoryLabel = categories.find((c) => c.id === activeCategory).label;
+
   return (
     <div className="page">
-      <div className="container">
-        <section className="window">
-          <div className="window-bar">
-            <div className="dots"><span /><span /><span /></div>
-            <span className="window-title">stack-helper — syamxm@homeserver</span>
-          </div>
-          <div className="window-body">
-            <p className="kicker">Ahmad Syamim</p>
-            <h1 className="title">Stack Helper</h1>
-            <p className="subtitle">What everything is, and why I use it.</p>
-            <p className="intro">
-            The tools and concepts documented here were not introduced through formal coursework alone. Most were discovered through independent exploration: reading technical documentation, following discussions on communities such as Reddit and YouTube, experimenting directly on a self-hosted Linux server, and increasingly, using AI assistants to accelerate understanding of unfamiliar concepts. Each tool was adopted to solve a real problem — whether securing a public-facing service, automating a deployment, or gaining visibility into a running system. The process of researching, breaking, fixing, and iterating on a live production environment has been the most effective way to internalise how these technologies work and, more importantly, why they exist.
+      <div className="shell">
+        <header className="hero">
+          <div className="hero-copy">
+            <p className="cmdline">
+              <span className="tick">~&gt;</span> cat stack.md
+              <span className="cursor" aria-hidden="true" />
             </p>
+            <h1 className="title">Stack Helper</h1>
+            <p className="sub">
+              Every tool running on my homeserver: what it is, and why I run it.
+            </p>
+            <dl className="meta-row">
+              <dt>entries</dt>
+              <dd>{allItems.length}</dd>
+              <dt>categories</dt>
+              <dd>{categories.length}</dd>
+              <dt>author</dt>
+              <dd>
+                <a href="https://syamxm.com">syamxm</a>
+              </dd>
+              <dt>host</dt>
+              <dd>self-hosted / debian</dd>
+            </dl>
           </div>
+          <AsciiLogo />
+        </header>
+
+        <section className="note">
+          <p className="note-head">
+            <span className="tick">~&gt;</span> cat about.txt
+          </p>
+          <p className="note-body">
+            The tools and concepts documented here were not introduced through formal coursework
+            alone. Most were discovered through independent exploration: reading technical
+            documentation, following discussions on communities such as Reddit and YouTube,
+            experimenting directly on a self-hosted Linux server, and increasingly, using AI
+            assistants to accelerate understanding of unfamiliar concepts. Each tool was adopted to
+            solve a real problem — whether securing a public-facing service, automating a
+            deployment, or gaining visibility into a running system. The process of researching,
+            breaking, fixing, and iterating on a live production environment has been the most
+            effective way to internalise how these technologies work and, more importantly, why they
+            exist.
+          </p>
         </section>
 
-        <div className="prompt">
-          <span className="prompt-label">~/stack $</span>
-          <input
-            className="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="search tools..."
-          />
-        </div>
-
-        {isSearching ? (
-          <p className="results-label">
-            {activeItems.length} result{activeItems.length !== 1 ? "s" : ""} for "{search}"
-          </p>
-        ) : (
-          <div className="tabs">
-            {categories.map((cat) => (
+        <div className="layout">
+          <nav className="rail" aria-label="categories">
+            {categories.map((cat, index) => (
               <button
                 key={cat.id}
-                className={`tab${activeCategory === cat.id ? " active" : ""}`}
+                type="button"
+                className={`rail-item${!isSearching && activeCategory === cat.id ? " on" : ""}`}
                 style={{ "--cat-color": cat.color }}
-                onClick={() => { setActiveCategory(cat.id); setExpandedItem(null); }}
+                aria-current={!isSearching && activeCategory === cat.id ? "true" : undefined}
+                onClick={() => {
+                  setActiveCategory(cat.id);
+                  setExpandedItem(null);
+                  setSearch("");
+                }}
               >
-                {cat.label}
+                <span className="rail-num">{ROMAN[index]}</span>
+                <span className="rail-label">{cat.label}</span>
+                <span className="rail-count">{cat.items.length}</span>
               </button>
             ))}
-          </div>
-        )}
+          </nav>
 
-        <div className="items">
-          {activeItems.map((item) => {
-            const isExpanded = expandedItem === item.name;
+          <main className="main">
+            <div className="prompt">
+              <label className="prompt-label" htmlFor="search">
+                ~/stack $
+              </label>
+              <input
+                id="search"
+                className="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="grep tools..."
+                autoComplete="off"
+              />
+              {isSearching && (
+                <button className="clear" type="button" onClick={() => setSearch("")}>
+                  clear
+                </button>
+              )}
+            </div>
 
-            return (
-              <div
-                key={item.name}
-                className={`card${isExpanded ? " expanded" : ""}`}
-                style={{ "--cat-color": item.color }}
-                onClick={() => setExpandedItem(isExpanded ? null : item.name)}
-              >
-                <div className="card-row">
-                  <div className="card-id">
-                    <span className="marker">{isExpanded ? "▾" : "▸"}</span>
-                    <span className="badge">{item.name}</span>
-                    {item.full !== item.name && <span className="card-full">{item.full}</span>}
-                  </div>
-                  <span className="toggle">{isExpanded ? "−" : "+"}</span>
-                </div>
+            <p className="results-label">
+              {isSearching
+                ? `${activeItems.length} match${activeItems.length === 1 ? "" : "es"} for "${search}"`
+                : activeCategoryLabel}
+            </p>
 
-                {isExpanded && (
-                  <div className="card-body">
-                    <div>
-                      <p className="section-label">What it is</p>
-                      <p className="section-text">{item.what}</p>
-                    </div>
-                    <div>
-                      <p className="section-label">Why I use it</p>
-                      <p className="section-text">{item.why}</p>
-                    </div>
-                    {item.acronyms?.length > 0 && (
-                      <div className="acronyms">
-                        <p className="section-label">Acronyms</p>
-                        <div className="chips">
-                          {item.acronyms.map((a) => (
-                            <span key={a} className="chip">{a}</span>
-                          ))}
+            {activeItems.length === 0 ? (
+              <p className="empty">
+                Nothing matches that. Try a tool name, an acronym, or a word from a description.
+              </p>
+            ) : (
+              <ul className="items">
+                {activeItems.map((item) => {
+                  const isExpanded = expandedItem === item.name;
+
+                  return (
+                    <li
+                      key={item.name}
+                      className={`card${isExpanded ? " expanded" : ""}`}
+                      style={{ "--cat-color": item.color }}
+                    >
+                      <button
+                        type="button"
+                        className="card-row"
+                        aria-expanded={isExpanded}
+                        onClick={() => setExpandedItem(isExpanded ? null : item.name)}
+                      >
+                        <span className="marker" aria-hidden="true">
+                          {isExpanded ? "▾" : "▸"}
+                        </span>
+                        <span className="badge">{item.name}</span>
+                        {item.full !== item.name && <span className="card-full">{item.full}</span>}
+                      </button>
+
+                      {isExpanded && (
+                        <div className="card-body">
+                          <div>
+                            <p className="section-label">What it is</p>
+                            <p className="section-text">{item.what}</p>
+                          </div>
+                          <div>
+                            <p className="section-label">Why I use it</p>
+                            <p className="section-text">{item.why}</p>
+                          </div>
+                          {item.acronyms?.length > 0 && (
+                            <div className="acronyms">
+                              <p className="section-label">Acronyms</p>
+                              <div className="chips">
+                                {item.acronyms.map((a) => (
+                                  <span key={a} className="chip">
+                                    {a}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {isSearching && (
+                            <p className="category-note">Category: {item.categoryLabel}</p>
+                          )}
                         </div>
-                      </div>
-                    )}
-                    {isSearching && (
-                      <p className="category-note">Category: {item.categoryLabel}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </main>
         </div>
 
-        <p className="footer">
-          {allItems.length} tools across {categories.length} categories
-        </p>
+        <footer className="foot">
+          <span>{allItems.length} entries across {categories.length} categories</span>
+          <a href="https://syamxm.com">syamxm.com</a>
+        </footer>
       </div>
     </div>
   );
