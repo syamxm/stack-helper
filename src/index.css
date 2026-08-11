@@ -31,6 +31,8 @@
   --pill-bg: rgba(124, 58, 237, 0.12);
   --blink: 530ms;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --scroll-thumb: rgba(124, 58, 237, 0.45);
+  --scroll-thumb-hover: rgba(167, 139, 250, 0.7);
 }
 
 * {
@@ -41,6 +43,40 @@
 
 html {
   scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+/* Chromium and Safari ignore scrollbar-color, so the same look is rebuilt here.
+   The 3px transparent border plus padding-box clip is what makes the thumb read
+   as a slim bar with air around it rather than a full-width slab. */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-track:vertical {
+  border-left: 1px solid var(--line);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -237,7 +273,11 @@ a:hover {
   overflow-x: auto;
   padding-bottom: 6px;
   scrollbar-width: thin;
-  scrollbar-color: var(--faint) transparent;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+.rail::-webkit-scrollbar {
+  height: 6px;
 }
 
 .rail-item {
