@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import AsciiLogo from "./AsciiLogo";
 
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
@@ -735,7 +735,8 @@ const allItems = categories.flatMap((c) =>
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("security");
-  const [expandedItem, setExpandedItem] = useState(null);
+  const [expandedItems, setExpandedItems] = useState(() => new Set());
+  const listTop = useRef(null);
   const [search, setSearch] = useState("");
 
   const query = search.trim().toLowerCase();
@@ -750,6 +751,22 @@ export default function App() {
     : allItems.filter((item) => item.categoryId === activeCategory);
 
   const activeCategoryLabel = categories.find((c) => c.id === activeCategory).label;
+
+  const toggleItem = (name) =>
+    setExpandedItems((open) => {
+      const next = new Set(open);
+      if (!next.delete(name)) next.add(name);
+      return next;
+    });
+
+  const selectCategory = (id) => {
+    setActiveCategory(id);
+    setExpandedItems(new Set());
+    setSearch("");
+    if (listTop.current.getBoundingClientRect().top < 0) {
+      listTop.current.scrollIntoView();
+    }
+  };
 
   return (
     <div className="page">
@@ -807,11 +824,7 @@ export default function App() {
                 className={`rail-item${!isSearching && activeCategory === cat.id ? " on" : ""}`}
                 style={{ "--cat-color": cat.color }}
                 aria-current={!isSearching && activeCategory === cat.id ? "true" : undefined}
-                onClick={() => {
-                  setActiveCategory(cat.id);
-                  setExpandedItem(null);
-                  setSearch("");
-                }}
+                onClick={() => selectCategory(cat.id)}
               >
                 <span className="rail-num">{ROMAN[index]}</span>
                 <span className="rail-label">{cat.label}</span>
@@ -820,7 +833,7 @@ export default function App() {
             ))}
           </nav>
 
-          <main className="main">
+          <main className="main" ref={listTop}>
             <div className="prompt">
               <label className="prompt-label" htmlFor="search">
                 ~/stack $
@@ -853,7 +866,7 @@ export default function App() {
             ) : (
               <ul className="items">
                 {activeItems.map((item) => {
-                  const isExpanded = expandedItem === item.name;
+                  const isExpanded = expandedItems.has(item.name);
 
                   return (
                     <li
@@ -865,7 +878,7 @@ export default function App() {
                         type="button"
                         className="card-row"
                         aria-expanded={isExpanded}
-                        onClick={() => setExpandedItem(isExpanded ? null : item.name)}
+                        onClick={() => toggleItem(item.name)}
                       >
                         <span className="marker" aria-hidden="true">
                           {isExpanded ? "▾" : "▸"}
