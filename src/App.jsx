@@ -864,7 +864,7 @@ export default function App() {
                 Nothing matches that. Try a tool name, an acronym, or a word from a description.
               </p>
             ) : (
-              <ul className="items">
+              <ul className="items" key={isSearching ? "search" : activeCategory}>
                 {activeItems.map((item) => {
                   const isExpanded = expandedItems.has(item.name);
 

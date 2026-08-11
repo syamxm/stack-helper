@@ -39,6 +39,16 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   background:
     radial-gradient(1100px 700px at 88% -12%, rgba(167, 139, 250, 0.05), transparent 60%),
@@ -310,8 +320,11 @@ a:hover {
   }
 }
 
+/* Holds the document tall enough that swapping a 24-entry category for a
+   5-entry one cannot shrink the page under the current scroll offset. */
 .main {
   scroll-margin-top: 16px;
+  min-height: calc(100dvh - 120px);
 }
 
 /* ---- prompt ---- */
@@ -383,6 +396,14 @@ a:hover {
 .items {
   list-style: none;
   border-top: 1px solid var(--line);
+  animation: list-in 200ms var(--ease) both;
+}
+
+@keyframes list-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 .card {
@@ -499,7 +520,8 @@ a:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cursor {
+  .cursor,
+  .items {
     animation: none;
   }
 
