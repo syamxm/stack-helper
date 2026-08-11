@@ -4,7 +4,7 @@ const categories = [
   {
     id: "security",
     label: "Security & Network",
-    color: "#ef4444",
+    color: "#f38ba8",
     items: [
       {
         name: "UFW",
@@ -89,12 +89,120 @@ const categories = [
         what: "A compact, self-contained token format used for securely transmitting identity and claims between a client and server. Commonly used for authentication in REST APIs.",
         why: "Used in TaskFlow for user authentication. When a user logs in, the server issues a JWT. The client sends it with every subsequent request so the server knows who is making the call — without storing session state on the server.",
       },
+      {
+        name: "httpOnly Cookie",
+        full: "httpOnly Cookie Auth",
+        acronyms: ["XSS — Cross-Site Scripting", "JWT — JSON Web Token", "CSRF — Cross-Site Request Forgery"],
+        what: "A cookie flagged so JavaScript cannot read it. The browser still sends it with every request, but scripts on the page have no access to its value.",
+        why: "TaskFlow stores its JWT in an httpOnly cookie rather than localStorage. If an XSS bug ever lands on the page, the attacker's script still cannot steal the token. Paired with SameSite=Strict and Secure so it never leaves over plain HTTP or on cross-site requests.",
+      },
+      {
+        name: "CSRF",
+        full: "Cross-Site Request Forgery",
+        acronyms: ["CSRF — Cross-Site Request Forgery", "POST — HTTP POST method"],
+        what: "An attack where a malicious site tricks a logged-in user's browser into sending a state-changing request to another site. The browser attaches the session cookie automatically, so the request looks legitimate.",
+        why: "BeanThere issues a CSRF token on every state-changing POST — placing an order, changing stock, redeeming points. Without it, cookie-based sessions are trivially abusable from any page the user visits while logged in.",
+      },
+      {
+        name: "Rate Limiting",
+        full: "Rate Limiting",
+        acronyms: ["IP — Internet Protocol"],
+        what: "Caps how many requests a client can make in a time window, rejecting the excess.",
+        why: "Different routes need different limits. TaskFlow rate-limits login separately from registration; BeanThere limits login per username+IP and per IP; the metrics API is capped at 60 requests/minute per IP in nginx. Fail2ban stops the slow brute-force — rate limiting stops the fast one before it reaches the app.",
+      },
+      {
+        name: "bcrypt",
+        full: "bcrypt",
+        acronyms: ["CPU — Central Processing Unit"],
+        what: "A password hashing function that is deliberately slow and salts every hash. The cost factor controls how much CPU work each hash takes.",
+        why: "Used in TaskFlow, Cipher Forge, and BeanThere. Passwords are never stored — only their hashes. The slowness is the feature: it makes offline cracking of a leaked database expensive. BeanThere also re-hashes on login when PHP's default cost increases.",
+      },
+      {
+        name: "Prepared Statements",
+        full: "Prepared Statements",
+        acronyms: ["SQL — Structured Query Language", "SQLi — SQL Injection"],
+        what: "Sending the SQL query and its parameters to the database separately, so user input is always treated as a value and never as executable SQL.",
+        why: "The fix for SQL injection. BeanThere uses them for every single query — no request input is ever string-concatenated into SQL anywhere in the codebase. Semgrep in the pipeline flags it if that ever slips.",
+      },
+      {
+        name: "Security Headers",
+        full: "HTTP Security Headers",
+        acronyms: ["CSP — Content Security Policy", "HSTS — HTTP Strict Transport Security", "MIME — Multipurpose Internet Mail Extensions"],
+        what: "Response headers that instruct the browser to enforce restrictions: CSP controls which scripts and resources may load, HSTS forces HTTPS, X-Frame-Options blocks framing, and X-Content-Type-Options stops MIME sniffing.",
+        why: "Set in nginx for TaskFlow, resume-builder, and BeanThere. BeanThere runs default-src 'self' — the site makes zero third-party requests, so the policy can be strict rather than permissive. Defence that costs nothing at runtime.",
+      },
+      {
+        name: "IDOR",
+        full: "Insecure Direct Object Reference",
+        acronyms: ["IDOR — Insecure Direct Object Reference", "ID — Identifier"],
+        what: "A flaw where changing an ID in a request lets you read or modify someone else's data, because the server checks that the record exists but not that you own it.",
+        why: "Every project and task query in TaskFlow is scoped to the owner in the database query itself, not checked afterwards. Guessing another user's project ID returns nothing rather than their board.",
+      },
+      {
+        name: "Mass Assignment",
+        full: "Mass Assignment",
+        what: "A flaw where a request body is passed straight into a database update, letting an attacker set fields the form never exposed — a role, an owner ID, a price.",
+        why: "TaskFlow whitelists which fields an update route may touch instead of forwarding the whole request body. Same class of bug as NoSQL operator injection, same fix: never trust the shape of the input.",
+      },
+      {
+        name: "Input Validation",
+        full: "Input Validation",
+        what: "Checking that incoming data matches an expected type, length, format, and set of allowed values before anything is done with it.",
+        why: "express-validator on every write route in TaskFlow, Pydantic models in the FastAPI projects. Rejecting bad input at the boundary means the rest of the code can assume the data is sane — far simpler than defending at every layer.",
+      },
+      {
+        name: "WireGuard",
+        full: "WireGuard",
+        acronyms: ["VPN — Virtual Private Network", "UDP — User Datagram Protocol"],
+        what: "A modern VPN protocol built into the Linux kernel. Small codebase, modern cryptography, no configuration negotiation — each peer just knows the others' public keys.",
+        why: "The protocol underneath Tailscale. Worth knowing separately because Tailscale is the convenience layer: it handles key exchange and NAT traversal, while WireGuard does the actual encrypted tunnelling.",
+      },
+    ],
+  },
+  {
+    id: "crypto",
+    label: "Cryptography",
+    color: "#cba6f7",
+    items: [
+      {
+        name: "RSA",
+        full: "Rivest–Shamir–Adleman",
+        acronyms: ["RSA — Rivest–Shamir–Adleman"],
+        what: "The classic public-key algorithm. Two large primes generate a public key (n, e) used to encrypt and a private key (d) used to decrypt. Its security rests on factoring n being infeasible when the primes are large.",
+        why: "The subject of two UiTM course projects. Cipher Agent is a terminal spy game where you encrypt in blocks using a friend's public key — and because its n is deliberately small, the game recovers d at runtime by factoring it, which demonstrates exactly why real keys are 2048 bits.",
+      },
+      {
+        name: "Public-Key Crypto",
+        full: "Asymmetric Cryptography",
+        what: "Encryption using a key pair: anyone can encrypt with the public key, but only the holder of the private key can decrypt. No shared secret needs to be exchanged in advance.",
+        why: "The idea that makes TLS, SSH keys, and WireGuard possible. Symmetric encryption is faster, but it has a chicken-and-egg problem: you need a secure channel to agree on the key. Asymmetric crypto solves the bootstrap.",
+      },
+      {
+        name: "One-Time Pad",
+        full: "One-Time Pad",
+        acronyms: ["XOR — Exclusive OR"],
+        what: "Encryption by XOR-ing the message with random key material as long as the message. Provably unbreakable — but only if the pad is truly random, kept secret, and never reused.",
+        why: "The two-player field channel in Cipher Agent. Every message consumes fresh pad bytes that are never reused, because reusing a pad instantly leaks the relationship between two messages. A good demonstration of how a perfect algorithm still fails on key management.",
+      },
+      {
+        name: "AES-256-GCM",
+        full: "Advanced Encryption Standard, Galois/Counter Mode",
+        acronyms: ["AES — Advanced Encryption Standard", "GCM — Galois/Counter Mode"],
+        what: "The standard symmetric cipher, in a mode that both encrypts and authenticates — tampering with the ciphertext is detected on decryption rather than silently producing garbage.",
+        why: "TaskFlow encrypts stored GitHub tokens with it. A user's token is a credential to someone else's account, so it cannot sit in the database in plaintext. Authenticated encryption is chosen over plain AES so a modified record fails loudly.",
+      },
+      {
+        name: "Hashing vs Encryption",
+        full: "Hashing vs Encryption",
+        what: "Encryption is reversible with a key. Hashing is one-way by design — there is no operation that turns a hash back into the original.",
+        why: "The distinction decides how data is stored. Passwords are hashed with bcrypt because nothing should ever need to read them back. GitHub tokens are encrypted with AES because the server genuinely has to send them to GitHub later. Getting this backwards is one of the most common security bugs.",
+      },
     ],
   },
   {
     id: "infra",
     label: "Infrastructure",
-    color: "#3b82f6",
+    color: "#89b4fa",
     items: [
       {
         name: "DevOps",
@@ -136,12 +244,73 @@ const categories = [
         what: "Git is the distributed version-control system that tracks every change to the code; GitHub is the hosted platform where the repositories live and where the CI/CD pipelines run.",
         why: "The backbone of every project and the trigger for the whole pipeline — a push to GitHub is what kicks off CI/CD. Branching keeps features isolated, and the full history makes any change reversible.",
       },
+      {
+        name: "Docker Compose",
+        full: "Docker Compose",
+        acronyms: ["YAML — YAML Ain't Markup Language"],
+        what: "Describes a multi-container application — its services, networks, volumes, and environment — in a single YAML file, brought up with one command.",
+        why: "Every project on the server is a compose file. It is also where the security boundaries live: which containers sit on the internal network, which one is allowed on proxy-net, and which ports are published to the host. The file is the deployment documentation.",
+      },
+      {
+        name: "Multi-Stage Build",
+        full: "Multi-Stage Docker Build",
+        acronyms: ["CVE — Common Vulnerabilities and Exposures"],
+        what: "A Dockerfile with several FROM stages, where the final image copies only the build output from the earlier stages. Compilers, dev dependencies, and source code stay behind.",
+        why: "The TaskFlow and resume-builder frontends build with Node and ship as static files in an nginx image. The runtime image has no npm, no toolchain, and no source — a smaller image with far fewer CVEs for Trivy to find.",
+      },
+      {
+        name: "Non-Root Containers",
+        full: "Non-Root Containers",
+        acronyms: ["UID — User Identifier"],
+        what: "Running the process inside a container as an unprivileged user instead of root, so a container breakout starts from a much weaker position.",
+        why: "The TaskFlow backend runs as the node user; both frontends use nginx-unprivileged. Containers are not a security boundary on their own, so the process inside should not be root either. Hadolint flags it in the pipeline when a Dockerfile forgets.",
+      },
+      {
+        name: "GHCR",
+        full: "GitHub Container Registry",
+        acronyms: ["GHCR — GitHub Container Registry"],
+        what: "A container image registry hosted alongside the GitHub repository. CI pushes built images to it; servers pull from it.",
+        why: "resume-builder deploys by pulling prebuilt GHCR images rather than building on the homeserver. The exact image that passed the security scans is the image that runs — and the server does not need a build toolchain or the source code at all.",
+      },
+      {
+        name: "Docker Socket Proxy",
+        full: "Docker Socket Proxy",
+        acronyms: ["API — Application Programming Interface"],
+        what: "A small proxy in front of the Docker socket that allows only specific read-only API calls through.",
+        why: "The metrics API needs per-container CPU and memory. Mounting the Docker socket directly would give it root over the whole host, so it talks to a proxy with CONTAINERS=1 and POST=0 instead. Least privilege applied to a container that only needs to look.",
+      },
+      {
+        name: "Apache",
+        full: "Apache HTTP Server",
+        acronyms: ["PHP — PHP: Hypertext Preprocessor"],
+        what: "The long-established web server, using a module-based architecture — mod_php runs PHP inside the server process itself.",
+        why: "Serves BeanThere, which is plain PHP with no framework. Nginx still sits in front as the reverse proxy; Apache only handles the PHP application behind it.",
+      },
+      {
+        name: "systemd",
+        full: "systemd",
+        what: "The Linux init system and service manager. A unit file declares how a service starts, when it starts, and what happens if it dies.",
+        why: "How anything that isn't a container stays running on the server, including the server-mode toggle script. Restart policies and boot ordering are handled by the OS rather than by hand.",
+      },
+      {
+        name: "Cron",
+        full: "Cron",
+        what: "The Unix job scheduler — runs a command on a fixed schedule defined by a crontab entry.",
+        why: "Drives the recurring work on the server: BeanThere's demo order progression and monthly voucher grants, plus backup and maintenance scripts. Boring, ancient, and completely reliable.",
+      },
+      {
+        name: "Maven",
+        full: "Apache Maven",
+        acronyms: ["JAR — Java Archive", "XML — Extensible Markup Language"],
+        what: "The Java build and dependency tool. A pom.xml declares dependencies and plugins; Maven resolves, compiles, tests, and packages the JAR.",
+        why: "Builds cv-api-spring. Comes with the wrapper (mvnw) committed to the repo, so CI and the Docker build use the exact same Maven version I do locally.",
+      },
     ],
   },
   {
     id: "devsecops",
     label: "DevSecOps & CI/CD",
-    color: "#14b8a6",
+    color: "#fab387",
     items: [
       {
         name: "CI",
@@ -232,12 +401,30 @@ const categories = [
         what: "A network scanner that discovers open ports and the services running behind them. The standard tool for mapping what a machine exposes.",
         why: "I use it to check the homeserver's attack surface from the outside — confirming that the hardening (UFW, Cloudflare Tunnel, Tailscale) really does leave zero unexpected ports open.",
       },
+      {
+        name: "Linting",
+        full: "Linting (ESLint, Ruff, php -l)",
+        what: "Static analysis that flags unused variables, unreachable branches, dangerous patterns, and style drift before the code ever runs.",
+        why: "ESLint on the JavaScript projects, Ruff on the Python ones, php -l as BeanThere's first CI gate. It is the cheapest stage in the pipeline, so it runs first — no point scanning for CVEs in code that doesn't parse.",
+      },
+      {
+        name: "Unit Testing",
+        full: "Unit Testing (pytest)",
+        what: "Small automated tests that exercise one piece of code in isolation and fail the build when its behaviour changes unexpectedly.",
+        why: "pytest covers the Cipher Agent RSA logic and Switchboard's flag handling. Tests matter most where the logic is easy to get subtly wrong and hard to eyeball — key generation and state files both qualify.",
+      },
+      {
+        name: "Concurrency Lock",
+        full: "Deploy Concurrency Lock",
+        what: "A GitHub Actions setting that allows only one run of a given job at a time, queueing or cancelling the rest.",
+        why: "TaskFlow serialises its deploy job behind a deploy-production lock. Two pushes landing close together would otherwise SSH into the same server and run docker compose simultaneously, leaving the stack in whichever half-state won the race.",
+      },
     ],
   },
   {
     id: "observability",
     label: "Observability",
-    color: "#f59e0b",
+    color: "#f9e2af",
     items: [
       {
         name: "Prometheus",
@@ -263,12 +450,25 @@ const categories = [
         what: "A self-hosted, privacy-respecting web analytics tool. Tracks page views, visitors, and traffic sources.",
         why: "Gives real visitor data for cv.syamxm.com and other public pages without sending data to Google. GDPR-friendly, lightweight, and I own the data. Also behind Cloudflare Access.",
       },
+      {
+        name: "node_exporter",
+        full: "Prometheus Node Exporter",
+        acronyms: ["CPU — Central Processing Unit", "RAM — Random Access Memory", "I/O — Input/Output"],
+        what: "An agent that reads the host's hardware and OS metrics from /proc and /sys and exposes them for Prometheus to scrape: CPU, memory, disk, filesystem, temperatures, network.",
+        why: "The source behind every host panel in Grafana and the btop-style panel on my portfolio. It only sees its own container's network namespace, though — which is why the metrics API reads host NIC counters from a bind-mounted /proc/1/net/dev instead.",
+      },
+      {
+        name: "Promtail",
+        full: "Promtail",
+        what: "Loki's log shipper. Tails log files on the host, labels each stream, and pushes the lines to Loki.",
+        why: "Loki stores and queries logs but does not collect them. Promtail is what actually reads auth.log, the UFW logs, and the Fail2ban logs off the homeserver — so a blocked attack shows up in Grafana next to the CPU graph.",
+      },
     ],
   },
   {
     id: "backend",
     label: "Backend & APIs",
-    color: "#10b981",
+    color: "#a6e3a1",
     items: [
       {
         name: "REST API",
@@ -321,12 +521,80 @@ const categories = [
         what: "Google's backend-as-a-service platform — managed authentication, a realtime document database (Firestore), and cloud messaging, all reached through client SDKs.",
         why: "Used in C-Aegis (Final Year Project) for authentication and realtime data sync between the parent and child apps. Lets a mobile app have a secure backend without running a server.",
       },
+      {
+        name: "MariaDB",
+        full: "MariaDB",
+        acronyms: ["SQL — Structured Query Language"],
+        what: "A community-maintained fork of MySQL, drop-in compatible with it.",
+        why: "The database behind BeanThere — menu, orders, loyalty points, and vouchers. MySQL-compatible because plain PHP's tooling assumes it, and it runs happily in a small container next to the app.",
+      },
+      {
+        name: "Spring Boot",
+        full: "Spring Boot",
+        acronyms: ["JVM — Java Virtual Machine", "DI — Dependency Injection"],
+        what: "The convention-over-configuration layer on top of the Spring framework. Auto-configures the server, data access, and security so an application starts from a single main method.",
+        why: "Runs cv-api-spring — a deliberate reimplementation of my Node/Express cv-api, built to learn the Spring ecosystem rather than to fix anything. Its JSON responses are byte-for-byte identical to the Node version, so I can diff the two and prove nothing drifted.",
+      },
+      {
+        name: "JPA / Hibernate",
+        full: "Jakarta Persistence API / Hibernate",
+        acronyms: ["JPA — Jakarta Persistence API", "ORM — Object-Relational Mapping"],
+        what: "JPA is the Java standard for mapping database rows to objects; Hibernate is the implementation Spring Boot uses by default.",
+        why: "Maps the cv-api-spring CV tables onto entities. Entities stay behind the service layer and DTOs are what cross the boundary — otherwise the database schema quietly becomes the public API contract.",
+      },
+      {
+        name: "SQLAlchemy",
+        full: "SQLAlchemy 2.0",
+        acronyms: ["ORM — Object-Relational Mapping"],
+        what: "Python's ORM and SQL toolkit. Models are Python classes; queries are composed in Python and compiled to SQL.",
+        why: "The data layer of resume-builder over PostgreSQL. Parameterisation is the default, so the SQL injection class of bug largely disappears — and dropping to raw SQL is still there when a query needs it.",
+      },
+      {
+        name: "Migrations",
+        full: "Database Migrations (Flyway, Alembic)",
+        acronyms: ["DDL — Data Definition Language"],
+        what: "Versioned, ordered scripts that evolve a database schema. Each one runs exactly once and is recorded, so every environment converges on the same structure.",
+        why: "Flyway in cv-api-spring, Alembic in resume-builder. A schema change is a committed file reviewed like any other code, instead of a command someone ran on production and forgot about. Rebuilding the database from scratch stays reproducible.",
+      },
+      {
+        name: "Pydantic",
+        full: "Pydantic",
+        what: "Python's data validation library. A model declares the expected fields and types; anything that doesn't match is rejected with a clear error.",
+        why: "How every FastAPI project validates input at the boundary. The request body is parsed into a typed model or fails with a 422 — the endpoint never sees malformed data, and the OpenAPI schema is generated from the same models.",
+      },
+      {
+        name: "Uvicorn / ASGI",
+        full: "Uvicorn + ASGI",
+        acronyms: ["ASGI — Asynchronous Server Gateway Interface", "WSGI — Web Server Gateway Interface"],
+        what: "ASGI is the async successor to WSGI — the interface between a Python web app and its server. Uvicorn is the ASGI server that actually runs the application.",
+        why: "Runs FastAPI in Cipher Agent, Cipher Forge, Switchboard, resume-builder, and the metrics API. Async matters where the work is waiting rather than computing: Switchboard polling site health and the metrics API scraping Prometheus both spend their time on I/O.",
+      },
+      {
+        name: "Motor",
+        full: "Motor (async MongoDB driver)",
+        what: "The asynchronous MongoDB driver for Python, designed for asyncio applications.",
+        why: "Cipher Forge stores accounts and leaderboard scores in MongoDB from FastAPI. The standard driver blocks the event loop; Motor doesn't, which is the whole point of running on ASGI.",
+      },
+      {
+        name: "OpenAPI / Swagger",
+        full: "OpenAPI Specification / Swagger UI",
+        acronyms: ["API — Application Programming Interface"],
+        what: "A machine-readable description of an HTTP API — its routes, parameters, and response shapes. Swagger UI renders it as browsable, testable documentation.",
+        why: "Generated automatically by FastAPI and exposed at /swagger-ui.html in cv-api-spring. Because it is derived from the code rather than written alongside it, the docs cannot drift out of date.",
+      },
+      {
+        name: "Ollama",
+        full: "Ollama (local LLM runtime)",
+        acronyms: ["LLM — Large Language Model", "GPU — Graphics Processing Unit", "VRAM — Video RAM"],
+        what: "Runs open-weight language models locally, exposing them over a small HTTP API. No external service and no data leaving the machine.",
+        why: "BeanThere's drink recommender runs qwen2.5:3b on the host GPU — a 3B model because there are only 4 GB of VRAM to work with. It sits behind a rule-based fallback, so the chatbot still answers when the model is down or the rate limit is hit. Self-hosted AI has to fail gracefully.",
+      },
     ],
   },
   {
     id: "frontend",
     label: "Frontend & Mobile",
-    color: "#8b5cf6",
+    color: "#94e2d5",
     items: [
       {
         name: "React",
@@ -354,12 +622,32 @@ const categories = [
         what: "Kotlin is the official language for Android development. The Android SDK provides APIs for device features.",
         why: "Used in C-Aegis (Final Year Project). Android-native for full access to the Device Admin API, AccessibilityService, and geofencing — features that a cross-platform framework cannot access deeply enough for a parental monitoring app.",
       },
+      {
+        name: "Vite",
+        full: "Vite",
+        acronyms: ["ESM — ECMAScript Modules", "HMR — Hot Module Replacement"],
+        what: "The build tool behind the React projects. Serves native ES modules with hot reload in development, and bundles a minified, hashed production build.",
+        why: "Builds this site, TaskFlow, Cipher Forge, and resume-builder. The output is plain static files, so deployment is just copying dist/ into an nginx image — no Node runtime in production.",
+      },
+      {
+        name: "Tailwind CSS",
+        full: "Tailwind CSS",
+        acronyms: ["CSS — Cascading Style Sheets"],
+        what: "A utility-first CSS framework. Styling is composed from small single-purpose classes in the markup, and the build strips every class the project never uses.",
+        why: "Used in TaskFlow and BeanThere, where it is compiled at image build time so no CDN request is needed — which is what lets BeanThere run a strict default-src 'self' CSP. This site is hand-written CSS instead, because its design follows syamxm.com rather than a utility system.",
+      },
+      {
+        name: "Chart.js",
+        full: "Chart.js",
+        what: "A canvas-based charting library for line, bar, and pie charts.",
+        why: "Renders BeanThere's admin analytics — sales over time, popular items, order volume. Self-hosted rather than loaded from a CDN, for the same CSP reason as Tailwind.",
+      },
     ],
   },
   {
     id: "languages",
     label: "Languages",
-    color: "#ec4899",
+    color: "#b4befe",
     items: [
       {
         name: "JavaScript",
@@ -412,7 +700,27 @@ const categories = [
         full: "HTML + CSS",
         acronyms: ["HTML — Hypertext Markup Language", "CSS — Cascading Style Sheets"],
         what: "The markup and styling languages that structure and style every web page.",
-        why: "The foundation under React. Hand-written across this site and the cv-api frontend for layout, theming, and the self-hosted Inter typography.",
+        why: "The foundation under React. Hand-written across this site and the cv-api frontend for layout, theming, and the self-hosted JetBrains Mono typography.",
+      },
+      {
+        name: "TypeScript",
+        full: "TypeScript",
+        what: "JavaScript with static types, checked at build time and erased at runtime.",
+        why: "The resume-builder frontend. Types earn their keep once an API response is passed through several components — a renamed field becomes a build error instead of undefined appearing somewhere on the page.",
+      },
+      {
+        name: "PHP",
+        full: "PHP: Hypertext Preprocessor",
+        acronyms: ["PHP — PHP: Hypertext Preprocessor"],
+        what: "A server-side scripting language built for the web, embedded directly in HTML templates and executed per request.",
+        why: "BeanThere is PHP 8.2 with no framework, on purpose. Without a framework handling CSRF tokens, prepared statements, session hardening, and rate limiting for me, I had to write each one and understand exactly what it defends against.",
+      },
+      {
+        name: "C",
+        full: "C",
+        acronyms: ["WMI — Windows Management Instrumentation", "ACPI — Advanced Configuration and Power Interface"],
+        what: "The systems language Linux itself is written in. Direct memory access, no runtime, and no garbage collector.",
+        why: "acer-wmi-battery is a Linux kernel module in C that exposes my laptop's battery charge limit through the vendor's ACPI-WMI interface. Kernel code is a different discipline from web work: no standard library, and a mistake takes down the machine rather than a request.",
       },
     ],
   },
@@ -441,24 +749,30 @@ export default function App() {
   return (
     <div className="page">
       <div className="container">
-        <header>
-          <p className="kicker">Ahmad Syamim</p>
-          <h1 className="title">Stack Helper</h1>
-          <p className="subtitle">What everything is, and why I use it.</p>
-        </header>
-
-        <div className="intro">
-          <p>
+        <section className="window">
+          <div className="window-bar">
+            <div className="dots"><span /><span /><span /></div>
+            <span className="window-title">stack-helper — syamxm@homeserver</span>
+          </div>
+          <div className="window-body">
+            <p className="kicker">Ahmad Syamim</p>
+            <h1 className="title">Stack Helper</h1>
+            <p className="subtitle">What everything is, and why I use it.</p>
+            <p className="intro">
             The tools and concepts documented here were not introduced through formal coursework alone. Most were discovered through independent exploration: reading technical documentation, following discussions on communities such as Reddit and YouTube, experimenting directly on a self-hosted Linux server, and increasingly, using AI assistants to accelerate understanding of unfamiliar concepts. Each tool was adopted to solve a real problem — whether securing a public-facing service, automating a deployment, or gaining visibility into a running system. The process of researching, breaking, fixing, and iterating on a live production environment has been the most effective way to internalise how these technologies work and, more importantly, why they exist.
-          </p>
-        </div>
+            </p>
+          </div>
+        </section>
 
-        <input
-          className="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search tools..."
-        />
+        <div className="prompt">
+          <span className="prompt-label">~/stack $</span>
+          <input
+            className="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="search tools..."
+          />
+        </div>
 
         {isSearching ? (
           <p className="results-label">
@@ -492,6 +806,7 @@ export default function App() {
               >
                 <div className="card-row">
                   <div className="card-id">
+                    <span className="marker">{isExpanded ? "▾" : "▸"}</span>
                     <span className="badge">{item.name}</span>
                     {item.full !== item.name && <span className="card-full">{item.full}</span>}
                   </div>
