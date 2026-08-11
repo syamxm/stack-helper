@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import AsciiLogo from "./AsciiLogo";
+import banner from "./lib/banner.txt?raw";
 
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -777,7 +778,8 @@ export default function App() {
               <span className="tick">~&gt;</span> cat stack.md
               <span className="cursor" aria-hidden="true" />
             </p>
-            <h1 className="title">Stack Helper</h1>
+            <pre className="banner" aria-hidden="true">{banner}</pre>
+            <h1 className="sr-only">Stack Helper</h1>
             <p className="sub">
               Every tool running on my homeserver: what it is, and why I run it.
             </p>

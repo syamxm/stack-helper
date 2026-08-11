@@ -160,12 +160,26 @@ a:hover {
   }
 }
 
-.title {
-  font-size: clamp(28px, 24px + 1.6vw, 42px);
-  font-weight: 700;
-  line-height: 1.15;
-  color: var(--fg);
-  letter-spacing: -0.02em;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ANSI Shadow wordmark. The glyphs are box-drawing characters, so the size is
+   driven by how many of the 48 columns have to fit the viewport, not by a
+   type scale. */
+.banner {
+  font-size: clamp(6.5px, 2.2vw, 16px);
+  line-height: 1;
+  color: var(--purple);
+  text-shadow: 0 0 12px rgba(124, 58, 237, 0.35);
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .sub {
