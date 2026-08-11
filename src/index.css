@@ -310,6 +310,10 @@ a:hover {
   }
 }
 
+.main {
+  scroll-margin-top: 16px;
+}
+
 /* ---- prompt ---- */
 
 .prompt {
