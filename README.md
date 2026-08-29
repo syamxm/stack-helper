@@ -1,5 +1,5 @@
 # Stack Helper
-# In Development
+# TODO: Update Content
 
 A reference site documenting my self-hosting and development stack — what each tool is, why I use it, and the acronyms behind it. Covers security, infrastructure, observability, backend, and frontend tooling running on my homeserver.
 
